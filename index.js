@@ -51,41 +51,88 @@ app.get("/products", async(req, res) => {
   
 });
 
+async function validateStock(items, token){
+  try{
+  for(i in items){
+    const item = items[i]
+    const response = await axios.post('http://localhost:5003/inventory', {
+      productName: item.productName,
+      quantity: item.quantity,
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+
+    const isValid = response.data
+      if(!isValid){
+        return false
+      }
+  }
+  }
+  catch(err) {
+    console.error(err);
+  }
+  return true
+}
+
+async function updateInventory(items, token){
+  try{
+  for(i in items){
+    const item = items[i]
+    const response = await axios.patch('http://localhost:5003/inventory', {
+      productName: item.productName,
+      quantity: item.quantity,
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    
+
+    const isValid = response.data
+      if(!isValid){
+        return false
+      }
+   }
+  }
+  catch(err) {
+    console.error(err);
+  }
+   return true
+}
+
 
 app.post("/order", async(req, res) => {
-   const { items } = req.body
-   await items.forEach(async(item) => {
-    axios.post('http://localhost:5003/inventory', {
-    productName: item.productName,
-    stock: item.stock,
-  })
-  .then(response => {
-    const isValid = response.data
-    if(!isValid){
-      res.send(`Product ${item.productName} is out of stock`)
-    }
-  })
-  .catch(error => {
-    console.error(error);
-  });
-   });
+  const items = req.body
 
-   await items.forEach(async(item) => {
-    axios.patch('http://localhost:5003/inventory', {
-    productName: item.productName,
-    stock: item.stock,
-  })
-  .then(response => {
-    const isValid = response.data
-    if(!isValid){
-      res.send(`Something went wrong`)
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) {
+    return res.sendStatus(401);
+  }
+
+  await jwt.verify(token, secret, async (err, decoded) => {
+    if (err) {
+      return res.sendStatus(403);
     }
-  })
-  .catch(error => {
-    console.error(error);
+    // If the token is valid, save the user details to the request object
+    req.user = decoded;
+    
+    const result = await validateStock(items, token)
+    if(!result){
+      res.send({ orderStatus: "Failed", message: `Some of the products are out of stock. Please try again.` })
+      return
+    }
+     
+    const inventoryResult = await updateInventory(items, token)
+
+    if(!inventoryResult){
+      res.send({ orderStatus: "Failed", message: `Something went wrong` })
+      return
+    }
+    
+     res.send({ orderStatus: "Successful" })
+     
   });
-   });
-   res.send("Order Placed")
+
+   
 });
 
 // start server
