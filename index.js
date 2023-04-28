@@ -8,8 +8,8 @@ const app = express();
 const port = 5002;
 
 const INVENTORY_SERVICE_URL = process.env.INVENTORY_SERVICE_URL;
-const secret = "314781839wjd3190u4edn13ed381de31bfu13ii";
 
+const secret = "314781839wjd3190u4edn13ed381de31bfu13ii";
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const uri =
   "mongodb+srv://productmanagement:productmanagement@cluster0.tch1uh5.mongodb.net/?retryWrites=true&w=majority";
